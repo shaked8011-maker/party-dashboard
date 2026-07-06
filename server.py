@@ -176,8 +176,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             import reminders
 
+            force = qs.get("force", ["0"])[0] == "1"
             base_url = f"https://{self.headers.get('Host', '')}"
-            result = reminders.send_daily_reminders(base_url)
+            result = reminders.send_daily_reminders(base_url, force=force)
             self._send_json(result)
         elif path == "/api/dashboard":
             ref = qs.get("date", [date.today().isoformat()])[0]

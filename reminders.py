@@ -23,14 +23,14 @@ def send_email(to_addr, subject, body):
         server.send_message(msg)
 
 
-def send_daily_reminders(dashboard_url):
+def send_daily_reminders(dashboard_url, force=False):
     today = date.today().isoformat()
     conn = get_conn()
 
     already_sent = conn.execute(
         "SELECT 1 FROM reminders_sent WHERE entry_date=?", (today,)
     ).fetchone()
-    if already_sent:
+    if already_sent and not force:
         conn.close()
         return {"skipped": True, "reason": "already sent today"}
 
@@ -69,7 +69,8 @@ def send_daily_reminders(dashboard_url):
                 errors.append(f"{p['name']}: {e}")
 
     conn.execute(
-        "INSERT INTO reminders_sent (entry_date, sent_at) VALUES (?, ?)",
+        "INSERT INTO reminders_sent (entry_date, sent_at) VALUES (?, ?) "
+        "ON CONFLICT(entry_date) DO UPDATE SET sent_at=excluded.sent_at",
         (today, datetime.now().isoformat(timespec="seconds")),
     )
     conn.commit()
