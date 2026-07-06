@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לוח בקרה - מפלגה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>לוח בקרה - מפלגה</h1>
+    <div class="subtitle" id="generatedAt">טוען...</div>
+  </div>
+  <a class="btn" href="/update">➕ עדכון יומי</a>
+</div>
+
+<div class="container">
+
+  <div class="week-nav">
+    <button id="prevWeek">‹ שבוע קודם</button>
+    <div class="week-label" id="weekLabel">...</div>
+    <button id="nextWeek">שבוע הבא ›</button>
+    <button id="todayBtn">השבוע הנוכחי</button>
+  </div>
+
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <div class="legend">
+    <span><span class="dot green"></span>עומד ביעד</span>
+    <span><span class="dot yellow"></span>קרוב ליעד</span>
+    <span><span class="dot red"></span>מתחת ליעד</span>
+    <span><span class="dot neutral"></span>ללא יעד מוגדר</span>
+    <span><span class="dot no-data"></span>אין נתונים</span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="dashTable">
+      <thead>
+        <tr id="headRow"></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>לוח הבקרה מתעדכן על ידי כל אחראי תחום באופן יומי · <a href="/update">לעדכון היומי לחצו כאן</a></footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

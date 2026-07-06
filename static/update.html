@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>עדכון יומי - לוח הבקרה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>עדכון יומי</h1>
+    <div class="subtitle">מלאו את הכמות שביצעתם היום בכל מדד באחריותכם</div>
+  </div>
+  <a class="btn" href="/">↩ ללוח הבקרה</a>
+</div>
+
+<div class="update-wrap">
+  <div class="field-group">
+    <label for="personSelect">מי אתה?</label>
+    <select id="personSelect">
+      <option value="">בחר/י שם...</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label for="dateInput">תאריך העדכון</label>
+    <input type="date" id="dateInput">
+  </div>
+
+  <p class="hint">שכחת לעדכן אתמול? פשוט בחר/י את התאריך הרלוונטי ומלא/י את הנתונים עבורו.</p>
+
+  <div id="metricsArea"></div>
+
+  <button class="submit-btn" id="submitBtn" style="display:none;">שמור עדכון</button>
+</div>
+
+<div class="toast" id="toast">העדכון נשמר בהצלחה ✓</div>
+
+<script src="/static/update.js"></script>
+</body>
+</html>
