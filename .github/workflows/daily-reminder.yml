@@ -1,0 +1,18 @@
+name: Daily reminder email
+
+on:
+  schedule:
+    # 19:00 Israel time = 16:00 UTC (summer/IDT) or 17:00 UTC (winter/IST).
+    # We trigger both; the server only actually sends once per day (idempotent),
+    # so this needs no manual adjustment when clocks change.
+    - cron: "0 16 * * *"
+    - cron: "0 17 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminder endpoint
+        run: |
+          curl -sS "https://party-dashboard-15fl.onrender.com/api/send-reminders?key=${{ secrets.REMINDER_SECRET_KEY }}"

@@ -19,6 +19,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
+            email TEXT,
             sort_order INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS metrics (
@@ -35,8 +36,16 @@ def init_db():
             value REAL NOT NULL,
             PRIMARY KEY (metric_id, entry_date)
         );
+        CREATE TABLE IF NOT EXISTS reminders_sent (
+            entry_date TEXT PRIMARY KEY,
+            sent_at TEXT NOT NULL
+        );
         """
     )
+    # migration: add email column for databases created before this field existed
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(people)")]
+    if "email" not in cols:
+        conn.execute("ALTER TABLE people ADD COLUMN email TEXT")
     conn.commit()
     conn.close()
 

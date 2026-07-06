@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול - לוח הבקרה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .admin-wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+  .person-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .person-head { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .person-head input { flex: 1; min-width: 120px; }
+  .metric-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; padding-right: 12px; }
+  .metric-line input { flex: 1; min-width: 90px; }
+  .metric-line input.narrow { flex: none; width: 90px; }
+  .small-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #f8fafc; cursor: pointer; font-weight: 600; font-size: 13px; }
+  .small-btn.danger { color: var(--red); border-color: var(--red-bg); }
+  .small-btn.primary { color: #fff; background: var(--primary); border: none; }
+  #loginBox { max-width: 340px; margin: 80px auto; text-align: center; }
+  #loginBox input { margin-bottom: 12px; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>ניהול לוח הבקרה</h1>
+    <div class="subtitle">הוספה/עריכה/מחיקה של אחראים ופעילויות</div>
+  </div>
+  <a class="btn" href="/">↩ ללוח הבקרה</a>
+</div>
+
+<div id="loginBox" class="container">
+  <div class="field-group">
+    <label for="passwordInput">סיסמת ניהול</label>
+    <input type="password" id="passwordInput" placeholder="הקלד/י סיסמה">
+  </div>
+  <button class="submit-btn" id="loginBtn">כניסה</button>
+  <p class="hint" id="loginError" style="color:var(--red);"></p>
+</div>
+
+<div id="app" class="admin-wrap">
+  <div id="peopleList"></div>
+  <div class="person-card">
+    <h3 style="margin-top:0;">הוספת אחראי חדש</h3>
+    <div class="person-head">
+      <input type="text" id="newPersonName" placeholder="שם האחראי">
+      <input type="email" id="newPersonEmail" placeholder="אימייל (לתזכורות)">
+      <button class="small-btn primary" id="addPersonBtn">הוסף אחראי</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">נשמר בהצלחה ✓</div>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

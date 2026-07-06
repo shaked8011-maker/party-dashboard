@@ -18,6 +18,11 @@ def parse_date(s: str) -> date:
     return datetime.strptime(s, "%Y-%m-%d").date()
 
 
+def check_admin(password):
+    expected = os.environ.get("ADMIN_PASSWORD", "admin123")
+    return password == expected
+
+
 def compute_dashboard(ref_date: date):
     conn = get_conn()
     ws = week_start(ref_date)
@@ -135,6 +140,45 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(STATIC / "index.html")
         elif path == "/update" or path == "/update.html":
             self._send_file(STATIC / "update.html")
+        elif path == "/admin" or path == "/admin.html":
+            self._send_file(STATIC / "admin.html")
+        elif path == "/api/admin/data":
+            password = qs.get("password", [""])[0]
+            if not check_admin(password):
+                self._send_json({"error": "unauthorized"}, status=401)
+                return
+            conn = get_conn()
+            people = conn.execute(
+                "SELECT * FROM people ORDER BY sort_order, id"
+            ).fetchall()
+            out = []
+            for p in people:
+                metrics = conn.execute(
+                    "SELECT * FROM metrics WHERE person_id=? ORDER BY sort_order, id",
+                    (p["id"],),
+                ).fetchall()
+                out.append(
+                    {
+                        "id": p["id"],
+                        "name": p["name"],
+                        "email": p["email"],
+                        "sort_order": p["sort_order"],
+                        "metrics": [dict(m) for m in metrics],
+                    }
+                )
+            conn.close()
+            self._send_json(out)
+        elif path == "/api/send-reminders":
+            key = qs.get("key", [""])[0]
+            expected = os.environ.get("REMINDER_SECRET_KEY")
+            if not expected or key != expected:
+                self._send_json({"error": "unauthorized"}, status=401)
+                return
+            import reminders
+
+            base_url = f"https://{self.headers.get('Host', '')}"
+            result = reminders.send_daily_reminders(base_url)
+            self._send_json(result)
         elif path == "/api/dashboard":
             ref = qs.get("date", [date.today().isoformat()])[0]
             try:
@@ -185,11 +229,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        length = int(self.headers.get("Content-Length", 0))
+        raw_body = self.rfile.read(length) if length else b"{}"
+
         if parsed.path == "/api/entry":
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length)
             try:
-                data = json.loads(body)
+                data = json.loads(raw_body)
                 metric_id = int(data["metric_id"])
                 entry_date = data["date"]
                 value = float(data["value"])
@@ -207,6 +252,79 @@ class Handler(BaseHTTPRequestHandler):
             conn.commit()
             conn.close()
             self._send_json({"ok": True})
+
+        elif parsed.path == "/api/admin/person":
+            try:
+                data = json.loads(raw_body)
+            except json.JSONDecodeError:
+                self._send_json({"error": "invalid payload"}, status=400)
+                return
+            if not check_admin(data.get("password", "")):
+                self._send_json({"error": "unauthorized"}, status=401)
+                return
+
+            conn = get_conn()
+            if data.get("delete") and data.get("id"):
+                conn.execute(
+                    "DELETE FROM entries WHERE metric_id IN (SELECT id FROM metrics WHERE person_id=?)",
+                    (data["id"],),
+                )
+                conn.execute("DELETE FROM metrics WHERE person_id=?", (data["id"],))
+                conn.execute("DELETE FROM people WHERE id=?", (data["id"],))
+            elif data.get("id"):
+                conn.execute(
+                    "UPDATE people SET name=?, email=?, sort_order=? WHERE id=?",
+                    (data.get("name", ""), data.get("email") or None, data.get("sort_order", 0), data["id"]),
+                )
+            else:
+                conn.execute(
+                    "INSERT INTO people (name, email, sort_order) VALUES (?, ?, ?)",
+                    (data.get("name", ""), data.get("email") or None, data.get("sort_order", 0)),
+                )
+            conn.commit()
+            conn.close()
+            self._send_json({"ok": True})
+
+        elif parsed.path == "/api/admin/metric":
+            try:
+                data = json.loads(raw_body)
+            except json.JSONDecodeError:
+                self._send_json({"error": "invalid payload"}, status=400)
+                return
+            if not check_admin(data.get("password", "")):
+                self._send_json({"error": "unauthorized"}, status=401)
+                return
+
+            conn = get_conn()
+            if data.get("delete") and data.get("id"):
+                conn.execute("DELETE FROM entries WHERE metric_id=?", (data["id"],))
+                conn.execute("DELETE FROM metrics WHERE id=?", (data["id"],))
+            elif data.get("id"):
+                conn.execute(
+                    "UPDATE metrics SET name=?, weekly_target=?, baseline=?, sort_order=? WHERE id=?",
+                    (
+                        data.get("name", ""),
+                        data.get("weekly_target") or None,
+                        data.get("baseline", 0),
+                        data.get("sort_order", 0),
+                        data["id"],
+                    ),
+                )
+            else:
+                conn.execute(
+                    "INSERT INTO metrics (person_id, name, weekly_target, baseline, sort_order) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        data["person_id"],
+                        data.get("name", ""),
+                        data.get("weekly_target") or None,
+                        data.get("baseline", 0),
+                        data.get("sort_order", 0),
+                    ),
+                )
+            conn.commit()
+            conn.close()
+            self._send_json({"ok": True})
+
         else:
             self.send_error(404, "Not found")
 
