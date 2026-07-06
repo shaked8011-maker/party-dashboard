@@ -32,21 +32,27 @@ def compute_dashboard(ref_date: date):
     people_rows = conn.execute(
         "SELECT * FROM people ORDER BY sort_order, id"
     ).fetchall()
+    metrics_rows = conn.execute(
+        "SELECT * FROM metrics ORDER BY person_id, sort_order, id"
+    ).fetchall()
+    entries_rows = conn.execute(
+        "SELECT metric_id, entry_date, value FROM entries"
+    ).fetchall()
+    conn.close()
+
+    metrics_by_person = {}
+    for m in metrics_rows:
+        metrics_by_person.setdefault(m["person_id"], []).append(m)
+
+    entries_by_metric = {}
+    for e in entries_rows:
+        entries_by_metric.setdefault(e["metric_id"], {})[e["entry_date"]] = e["value"]
 
     result_people = []
     for prow in people_rows:
-        metrics_rows = conn.execute(
-            "SELECT * FROM metrics WHERE person_id=? ORDER BY sort_order, id",
-            (prow["id"],),
-        ).fetchall()
-
         metrics_out = []
-        for mrow in metrics_rows:
-            entries = conn.execute(
-                "SELECT entry_date, value FROM entries WHERE metric_id=?",
-                (mrow["id"],),
-            ).fetchall()
-            entry_map = {e["entry_date"]: e["value"] for e in entries}
+        for mrow in metrics_by_person.get(prow["id"], []):
+            entry_map = entries_by_metric.get(mrow["id"], {})
 
             daily = {d: entry_map.get(d) for d in day_strs}
             week_sum = sum(v for d, v in daily.items() if v is not None)
@@ -97,7 +103,6 @@ def compute_dashboard(ref_date: date):
             {"id": prow["id"], "name": prow["name"], "metrics": metrics_out}
         )
 
-    conn.close()
     return {
         "week_start": ws.isoformat(),
         "week_end": days[-1].isoformat(),
@@ -151,22 +156,26 @@ class Handler(BaseHTTPRequestHandler):
             people = conn.execute(
                 "SELECT * FROM people ORDER BY sort_order, id"
             ).fetchall()
+            all_metrics = conn.execute(
+                "SELECT * FROM metrics ORDER BY person_id, sort_order, id"
+            ).fetchall()
+            conn.close()
+
+            metrics_by_person = {}
+            for m in all_metrics:
+                metrics_by_person.setdefault(m["person_id"], []).append(dict(m))
+
             out = []
             for p in people:
-                metrics = conn.execute(
-                    "SELECT * FROM metrics WHERE person_id=? ORDER BY sort_order, id",
-                    (p["id"],),
-                ).fetchall()
                 out.append(
                     {
                         "id": p["id"],
                         "name": p["name"],
                         "email": p["email"],
                         "sort_order": p["sort_order"],
-                        "metrics": [dict(m) for m in metrics],
+                        "metrics": metrics_by_person.get(p["id"], []),
                     }
                 )
-            conn.close()
             self._send_json(out)
         elif path == "/api/send-reminders":
             key = qs.get("key", [""])[0]
