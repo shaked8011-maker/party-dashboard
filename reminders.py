@@ -1,26 +1,32 @@
+import json
 import os
-import smtplib
+import urllib.request
 from datetime import date, datetime
-from email.mime.text import MIMEText
 
 from db import get_conn
 
 
 def send_email(to_addr, subject, body):
-    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    port = int(os.environ.get("SMTP_PORT", 587))
-    user = os.environ["GMAIL_ADDRESS"]
-    password = os.environ["GMAIL_APP_PASSWORD"]
+    api_key = os.environ["SENDGRID_API_KEY"]
+    from_addr = os.environ["GMAIL_ADDRESS"]
 
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = user
-    msg["To"] = to_addr
-
-    with smtplib.SMTP(host, port) as server:
-        server.starttls()
-        server.login(user, password)
-        server.send_message(msg)
+    payload = {
+        "personalizations": [{"to": [{"email": to_addr}]}],
+        "from": {"email": from_addr},
+        "subject": subject,
+        "content": [{"type": "text/plain", "value": body}],
+    }
+    req = urllib.request.Request(
+        "https://api.sendgrid.com/v3/mail/send",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        resp.read()
 
 
 def send_daily_reminders(dashboard_url, force=False):
